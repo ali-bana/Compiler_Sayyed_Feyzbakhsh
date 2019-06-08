@@ -1,0 +1,84 @@
+Pro -> Dec_l eof.
+Dec_l -> Dec Dec_l 
+    | .
+Dec -> Ty_s id Var_or_fun.
+Var_or_fun -> Fun_d
+    | Var_d.
+Fun_d -> ( Pars ) Com_s.
+Var_d ->  openc num closec semi
+    | semi.
+Ty_s -> int 
+    | void.
+Pars -> int id Par1 Par_l1
+    | void Pars1.
+Pars1 -> id Par1 Par_l1
+    | .
+Par_l -> Par Par_l1.
+Par_l1 -> and Par Par_l1
+    | .
+Par -> Ty_s id Par1.
+Par1 -> openc closec
+    | .
+Com_s -> openg Dec_l St_l closeg.
+St_l -> St St_l 
+    | .
+St -> Ex_s 
+    | Com_s 
+    | Sel_s 
+    | It_s 
+    | Re_s 
+    | Sw_s.
+Ex_s -> Ex semi
+    | continue semi 
+    | break semi 
+    | semi.
+Sel_s -> if ( Ex ) St else St.
+It_s -> while ( Ex ) St.
+Re_s -> return Re_s1.
+Re_s1 -> Ex semi
+    | semi.
+Sw_s -> switch ( Ex ) openg Ca_ss De_s closeg.
+Ca_ss -> Ca_s Ca_ss 
+    | .
+Ca_s -> case num donoghte St_l.
+De_s -> defualt donoghte St_l 
+    | .
+Ex -> plus Fa Term1 Ad_ex1 Si_ex1
+    | minus Fa Term1 Ad_ex1 Si_ex1
+    | num Term1 Ad_ex1 Si_ex1
+    | ( Ex ) Term1 Ad_ex1 Si_ex1
+    | id Ex1.
+Ex1 -> Call Term1 Ad_ex1 Si_ex1
+    | Var1 Ex2.
+Ex2 -> mosav Ex
+    | Term1 Ad_ex1 Si_ex1.
+Si_ex -> Ad_ex Si_ex1.
+Si_ex1 -> Relop Ad_ex
+    | .
+Relop -> bozorgtar 
+    | mosavmosav.
+Ad_ex -> Term Ad_ex1.
+Ad_ex1 -> Addop Term Ad_ex1
+    | .
+Addop -> plus 
+    | minus.
+Term -> Si_fa Term1.
+Term1 -> * Si_fa Term1
+    |.
+Si_fa -> Fa 
+    | plus Fa 
+    | minus Fa.
+Fa -> ( Ex ) 
+    | id Fa1
+    | num.
+Fa1 -> Call 
+    | Var1.
+Call -> ( Args ) .
+Var -> id Var1.
+Var1 -> openc Ex closec
+    | .
+Args -> Arg_l 
+    | .
+Arg_l -> Ex Arg_l1.
+Arg_l1 -> and Ex Arg_l1
+    | .
