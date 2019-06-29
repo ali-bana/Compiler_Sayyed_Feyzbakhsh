@@ -1,4 +1,4 @@
-from tools.Parser import Parser
+from tools.parallel_parser import Parser
 
 
 if __name__ == '__main__':

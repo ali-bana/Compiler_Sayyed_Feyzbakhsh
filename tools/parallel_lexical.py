@@ -82,9 +82,16 @@ class LexicalAnalyser:
                     self.has_ended = True
                 return temp
             return self.last
-        return self.soon_results.get()
+        a = self.soon_results.get()
+        return a
 
     def look_next(self):
+        if not self.soon_results.empty():
+            temp = self.soon_results.get()
+            self.soon_results.put(temp)
+            return temp
+        if self.has_ended:
+            return self.last
         temp = self.parser.__next__()
         if temp[0] == 'EOF':
             self.last = temp
@@ -128,35 +135,47 @@ class LexicalAnalyser:
             if not is_comment:
                 if c == '=':
                     if token in key_words:
+                        result.append([token, 'keyword', line])########################
                         yield [token, 'keyword', line]########################
                     elif token.isnumeric():
+                        result.append([token, 'num', line])############################
                         yield [token, 'num', line]############################
                     elif token != '':
+                        result.append([token, 'id', line])###############################
                         yield [token, 'id', line]###############################
                     token = ''
                     if self.rw.has_next():
                         self.rw.next()
                         if self.rw.read() == '=':
+                            result.append(['==', 'symbol', line])###########################
                             yield ['==', 'symbol', line]###########################
                             self.rw.next()
                             continue
+                    result.append(['=', 'symbol', line])#############################
                     yield ['=', 'symbol', line]#############################
 
                 elif c in simbols:
                     if token in key_words:
+                        result.append([token, 'keyword', line])########################
                         yield [token, 'keyword', line]########################
                     elif token.isnumeric():
+                        result.append([token, 'num', line])###########################
                         yield [token, 'num', line]###########################
                     elif token != '':
+                        result.append([token, 'id', line])##############################
                         yield [token, 'id', line]##############################
                     token = ''
+                    result.append([c, 'symbol', line])#################################
                     yield [c, 'symbol', line]#################################
                 elif c in white_space:
                     if token in key_words:
+                        result.append([token, 'keyword', line])#######################
                         yield [token, 'keyword', line]#######################
                     elif token.isnumeric():
+                        result.append([token, 'num', line])##################################
                         yield [token, 'num', line]##################################
                     elif token != '':
+                        result.append([token, 'id', line])#################################
                         yield [token, 'id', line]#################################
                     token = ''
                     if c == '\n':
@@ -178,12 +197,16 @@ class LexicalAnalyser:
                 self.rw.next()
         if token != '':
             if token in key_words:
+                result.append([token, 'keyword', line])############################
                 yield [token, 'keyword', line]############################
             elif token.isnumeric():
+                result.append([token, 'num', line])#############################
                 yield [token, 'num', line]#############################
             elif token != '':
+                result.append([token, 'id', line])#################################
                 yield [token, 'id', line]#################################
 
-        yield ['EOF', 'EOF', line]###################################
+        result.append(['EOF', 'EOF', line])###################################
         self.rw.print_lexical_scanner(result)
         self.rw.print_errors()
+        yield ['EOF', 'EOF', line]###################################
