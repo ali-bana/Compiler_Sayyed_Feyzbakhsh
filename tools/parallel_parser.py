@@ -9,6 +9,16 @@ class ParseNode:
     def add_child(self, child):
         self.children.append(child)
 
+class Variable:
+    def __init__(self, id, address, type):
+        self.id = id
+        self.address = address
+        self.type = type
+        self.accessable = True
+
+
+
+
 
 class Parser:
     def __init__(self, program_name):
@@ -145,6 +155,52 @@ class Parser:
         self.firsts['Var1'].extend(self.follows['Var1'])
         self.firsts['Args'].extend(self.follows['Args'])
         self.firsts['Arg_l1'].extend(self.follows['Arg_l1'])
+
+        self.parse_stack = []
+        self.make_i = True
+        self.id_list = []
+        self.break_list = []
+        self.var_section = 500
+        self.temp_i = 700
+        self.heap = 1000
+        self.pb = []
+        self.word_length = 4
+        self.vars = []
+
+
+
+    def get_temp(self):
+        result = self.temp_i
+        self.temp_i += self.word_length
+        return result
+
+    def add_var(self, type, id, address):
+        self.vars.append(Variable(id, address, type))
+
+    def sub_scope(self):
+        self.vars.append('[')
+
+    def close_scope(self):
+        while 1:
+            if self.vars.pop() == '[':
+                break
+
+    def get_var(self, id):
+        for i in range(len(self.vars)-1, -1, -1):
+            if self.vars[i] == '[':
+                continue
+            if self.vars[i].id == id:
+                return self.vars[i].address
+
+    def add_command(self, command, add1, add2, add3):
+        self.pb.append('(' + command + ', ' + add1 + ', ' + add2 + ', ' + add3 + ')')
+
+    def put_command(self, command, add1, add2, add3, i):
+        self.pb[i] = '(' + command + ', ' + add1 + ', ' + add2 + ', ' + add3 + ')'
+
+    def get_pbi(self):
+        return len(self.pb)
+
 
     def write_error(self, error):
         f = open(self.errors_path, 'a')

@@ -146,6 +146,14 @@ class Parser:
         self.firsts['Args'].extend(self.follows['Args'])
         self.firsts['Arg_l1'].extend(self.follows['Arg_l1'])
 
+        self.parse_stack = []
+        self.make_i = True
+        self.variable_list = []
+        self.break_list = []
+        self.var_section = 500
+        self.temp_section = 700
+        self.heap = 1000
+
     def write_error(self, error):
         f = open(self.errors_path, 'a')
         f.write(error + '\n')
@@ -206,12 +214,12 @@ class Parser:
             self.write_error(str(self.la.look_next()[2]) + ': Syntax Error! Missing ' + non_terminal)
             return 'jump'
         self.write_error(str(self.la.look_next()[2]) + ' : Syntax Error! Unexpected ' + self.la.look_next()[0])
-        self.la.get_next()
 
         if self.terminal_checker(self.la.look_next(), 'EOF'):
             self.write_error('Unexpected EOF')
-            return 'continue'
+            return 'Jump'
 
+        self.la.get_next()
         return self.non_terminal_error_handler(non_terminal)
 
     def in_checker(self, terminal, set):
