@@ -33,10 +33,10 @@ Ex_s -> Ex #pop semi
     | break semi #add_to list
     | semi.
 Sel_s -> if ( Ex ) #save St else #fill_jpf #save St #fill_jp.
-It_s -> while ( Ex ) #save_jpf #push_pc #new_break_list St #fill_jpf #pop2 #fill_breaks.
+It_s -> while #save ( Ex ) #save_jpf #push_pc #new_break_list St #fill_jpf #pop2 #fill_breaks.
 Re_s -> return Re_s1.
-Re_s1 -> Ex semi
-    | semi.
+Re_s1 -> Ex #push_to_stack #jump_to_return_register semi
+    | semi #jump_to_return_register.
 Sw_s -> switch ( Ex ) openg #new_break_list Ca_ss De_s closeg #fill_breaks.
 Ca_ss -> Ca_s Ca_ss 
     | .
@@ -72,11 +72,11 @@ Fa -> ( Ex )
     | num #push_number.
 Fa1 -> Call 
     | Var1.
-Call -> ( Args ) #call.
+Call -> #save_locals_to_stack ( Args ) #jump.
 Var1 -> openc Ex closec #find_index
     | #load_address.
 Args -> Arg_l 
     | .
-Arg_l -> Ex Arg_l1.
+Arg_l -> Ex #put_on_top_of_stack Arg_l1.
 Arg_l1 -> and Ex Arg_l1
     | .

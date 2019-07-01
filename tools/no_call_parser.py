@@ -172,7 +172,6 @@ class Parser:
         self.heap_reg = 1000
         self.stack_start = 2004
         self.sp = 2000
-        self.return_register = 3000
 
 
 
@@ -205,7 +204,7 @@ class Parser:
         self.pb.append('(' + command + ', ' + str(add1) + ', ' + str(add2) + ', ' + str(add3) + ')')
 
     def put_command(self, command, add1, add2, add3, i):
-        self.pb[int(i)] = '(' + command + ', ' + str(add1) + ', ' + str(add2) + ', ' + str(add3) + ')'
+        self.pb[i] = '(' + command + ', ' + str(add1) + ', ' + str(add2) + ', ' + str(add3) + ')'
 
     def skip_command(self):
         self.pb.append('')
@@ -343,13 +342,7 @@ class Parser:
 
     def print_intermediate(self):
         for i in range(len(self.pb)):
-            print(str(i) + '\t' + self.pb[i])
-
-    def get_function_address(self, id):
-        for f in self.functions:
-            if f[0] == id:
-                return f[1]
-
+            print(i, self.pb[i])
 
     def Pro(self):
         root = ParseNode('Program')
@@ -433,13 +426,6 @@ class Parser:
             self.put_command('JP', self.get_pbi(), '', '', 2)
         ####
         self.pass_nonterminal_edge(node, 'Pars', function=self.Pars)
-        ######
-        for v in self.vars[::-1]:
-            if v == '[':
-                break
-            self.add_command('SUB', self.sp, '#'+str(self.word_length), self.sp)
-            self.add_command('ASSIGN', '@'+str(self.sp), v.address, '')
-        ######
         self.pass_terminal_edge(node, ')')
 
         self.pass_nonterminal_edge(node, 'Com_s', function=self.Com_s)
@@ -599,9 +585,11 @@ class Parser:
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
         #######
+        t = self.get_temp()
         ex = self.pop()
+        self.add_command('LT', ex, '#0', t)
         self.push(self.get_pbi())
-        self.push(ex)
+        self.push(t)
         self.skip_command()
         #######
         self.pass_nonterminal_edge(node, 'St', self.St)
@@ -631,9 +619,11 @@ class Parser:
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
         ######
+        t = self.get_temp()
         ex = self.pop()
+        self.add_command('LT', ex, '0', t)
         self.push(self.get_pbi())
-        self.push(ex)
+        self.push(t)
         self.skip_command()
         ######
         self.pass_nonterminal_edge(node, 'St', self.St)
@@ -681,18 +671,9 @@ class Parser:
     def Re_s1(self):
         node = ParseNode('Re_s1')
         if self.terminal_checker(self.la.look_next(), ';'):
-
             self.pass_terminal_edge(node, ';')
         else:
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
-            ###########
-            return_val = self.pop()
-            self.add_command('SUB', self.sp, '#'+str(self.word_length), self.sp)
-            self.add_command('ASSIGN', '@'+str(self.sp) , self.return_register, '')
-            self.add_command('ASSIGN', return_val, '@'+str(self.sp), '')
-            self.add_command('ADD', self.sp, '#' + str(self.word_length), self.sp)
-            self.add_command('JP', '@'+str(self.return_register), '', '')
-            ###########
             self.pass_terminal_edge(node, ';')
 
         return node
@@ -777,9 +758,8 @@ class Parser:
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
             ######
             var_add = self.pop()
-            t = self.get_temp()
-            self.add_command('SUB', '#0', var_add, t)
-            self.push(t)
+            self.add_command('SUB', '#0', var_add, var_add)
+            self.push(var_add)
             #######
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
             self.pass_nonterminal_edge(node, 'Ad_ex1', self.Ad_ex1)
@@ -792,7 +772,6 @@ class Parser:
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
             self.pass_nonterminal_edge(node, 'Ad_ex1', self.Ad_ex1)
             self.pass_nonterminal_edge(node, 'Si_ex1', self.Si_ex1)
-            # print(self.int_stack)
         elif self.terminal_checker(self.la.look_next(), '('):
             self.pass_terminal_edge(node, '(')
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
@@ -830,7 +809,7 @@ class Parser:
             ######
             ex = self.pop()
             var = self.pop()
-            self.add_command('ASSIGN', ex, var, '')
+            self.add_command('ASSIGN', var, ex, '')
             self.push(ex)
             ######
         else:
@@ -981,40 +960,9 @@ class Parser:
 
     def Call(self):
         node = ParseNode('Call')
-        ###########
-        for v in self.vars:
-            if v == '[':
-                continue
-            self.add_command('ASSIGN', v.address, '@'+str(self.sp), '')
-            self.add_command('ADD', self.sp, '#'+str(self.word_length), self.sp)
-        self.push(self.get_pbi())
-        self.skip_command()
-        self.skip_command()
-        ###########
         self.pass_terminal_edge(node, '(')
         self.pass_nonterminal_edge(node, 'Args', self.Args)
         self.pass_terminal_edge(node, ')')
-        #########
-        print(self.int_stack)
-        add = self.pop()
-        self.put_command('ASSIGN', '#'+str(self.get_pbi() + 1), '@'+str(self.sp), '', add)
-        add += 1
-        self.put_command('ADD', self.sp, '#'+str(self.word_length), self.sp, add)
-        print('in', self.int_stack)
-        print(self.functions)
-        func_add = self.get_function(self.pop())[1]
-        self.add_command('JP', func_add, '', '')
-        #called the function
-        t = self.get_temp()
-        self.add_command('SUB', self.sp, '#'+str(self.word_length), self.sp)
-        self.add_command('ASSIGN', '@'+str(self.sp), t, '')
-        self.push(t)
-        for v in self.vars[::-1]:
-            if v == '[':
-                continue
-            self.add_command('SUB', self.sp, '#' + str(self.word_length), self.sp)
-            self.add_command('ASSIGN', '@'+str(self.sp), v.address, '')
-        #########
         return node
 
     def Var(self):
@@ -1052,10 +1000,6 @@ class Parser:
     def Arg_l(self):
         node = ParseNode('Arg_l')
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
-        #########
-        self.add_command('ASSIGN', self.pop(), '@'+str(self.sp), '')
-        self.add_command('ADD', self.sp, '#'+str(self.word_length), self.sp)
-        #########
         self.pass_nonterminal_edge(node, 'Arg_l1', self.Arg_l1)
         return node
 
@@ -1064,9 +1008,5 @@ class Parser:
         if self.terminal_checker(self.la.look_next(), ','):
             self.pass_terminal_edge(node, ',')
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
-            #########
-            self.add_command('ASSIGN', self.pop(), '@'+str(self.sp), '')
-            self.add_command('ADD', self.sp, '#' + str(self.word_length), self.sp)
-            #########
             self.pass_nonterminal_edge(node, 'Arg_l1', self.Arg_l1)
         return node
