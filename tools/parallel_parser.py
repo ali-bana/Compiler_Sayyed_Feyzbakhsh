@@ -10,11 +10,12 @@ class ParseNode:
         self.children.append(child)
 
 class Variable:
-    def __init__(self, id, address, type):
+    def __init__(self, id, address, type, int_or_void):
         self.id = id
         self.address = address
         self.type = type
         self.accessable = True
+        self.int_or_void = int_or_void
 
     def to_string(self):
         return '(' + 'id=' + self.id + ' ' + 'address=' + str(self.address) + ' ' + 'type=' + self.type + ')' + ' '
@@ -163,6 +164,7 @@ class Parser:
         self.id_list = []
         self.break_list = []
         self.var_section = 500
+        self.start_temp = 700
         self.temp_i = 700
         self.heap = 1004
         self.pb = []
@@ -170,10 +172,13 @@ class Parser:
         self.vars = []
         self.functions = []
         self.heap_reg = 1000
+        self.semantic_errors = []
         self.stack_start = 2004
         self.sp = 2000
         self.return_register = 3000
-
+        self.temp_call_params = []
+        self.number_of_while = 0
+        self.number_of_switch = 0
 
 
     def get_temp(self):
@@ -181,25 +186,42 @@ class Parser:
         self.temp_i += self.word_length
         return result
 
-    def add_var(self, id, type):
-        self.vars.append(Variable(id, self.var_section, type))
+    def add_var(self, id, type, int_or_void):
+        self.check_define_var_or_func(id)
+        self.check_not_void(int_or_void)
+        self.vars.append(Variable(id, self.var_section, type, int_or_void))
         self.var_section += self.word_length
         self.print_vars()
 
     def sub_scope(self):
         self.vars.append('[')
+        self.functions.append('[')
 
     def close_scope(self):
         while 1:
             if self.vars.pop() == '[':
                 break
+        while 1:
+            if self.functions.pop() == '[':
+                break
 
     def get_var(self, id):
+        self.check_use_of_var(id)
         for i in range(len(self.vars)-1, -1, -1):
             if self.vars[i] == '[':
                 continue
             if self.vars[i].id == id:
                 return self.vars[i].address
+
+    def get_var_type_by_address(self, address):
+        for i in range(len(self.vars)-1, -1, -1):
+            if self.vars[i] == '[':
+                continue
+            if self.vars[i].address == address:
+                return self.vars[i].type
+        if self.start_temp <= address < self.heap_reg or address >= self.return_register or self.heap_reg <= address < self.sp:
+            return 'int'
+
 
     def add_command(self, command, add1, add2, add3):
         self.pb.append('(' + command + ', ' + str(add1) + ', ' + str(add2) + ', ' + str(add3) + ')')
@@ -215,6 +237,8 @@ class Parser:
 
     def get_function(self, id):
         for f in self.functions:
+            if f == "[":
+                continue
             if f[0] == id:
                 return f
 
@@ -224,7 +248,7 @@ class Parser:
 
 
     def add_parameter(self, parameter_id, type):
-        self.functions[len(self.functions)-1][3].append([parameter_id, type])
+        self.functions[len(self.functions)-2][3].append([parameter_id, type])
 
     def push_tocken(self):
         self.int_stack.append(self.la.look_next()[0])
@@ -426,6 +450,7 @@ class Parser:
         func_name = self.pop()
         self.add_function(func_name, self.get_pbi(), self.pop())
         self.sub_scope()
+        self.check_define_var_or_func(func_name)
         #
         self.pass_terminal_edge(node, '(')
         #####
@@ -457,15 +482,17 @@ class Parser:
             ######
             size = int(self.pop()) * self.word_length
             id = self.pop()
-            self.pop()
-            self.add_var(id, 'array')
+            iv_type = self.pop()
+            self.add_var(id, 'array', iv_type)
             var_addr = self.get_var(id)
             self.add_command('ASSIGN', self.heap_reg, str(var_addr), '')
             self.add_command('ADD', self.heap_reg, '#'+str(size), self.heap_reg)
             ######
         else:
             #
-            self.add_var(self.pop(), self.pop())
+            t1 = self.pop()
+            t2 = self.pop()
+            self.add_var(t1, t2, t2)
             #
             self.pass_terminal_edge(node, ';')
         return node
@@ -541,15 +568,15 @@ class Parser:
             ######
             id = self.pop()
             self.add_parameter(id, 'array')
-            self.add_var(id, 'array')
-            self.pop()
+            iv = self.pop()
+            self.add_var(id, 'array', iv)
             #######
         else:
             ######
             id = self.pop()
             type = self.pop()
             self.add_parameter(id, type)
-            self.add_var(id, type)
+            self.add_var(id, type, type)
             #######
         return node
 
@@ -631,6 +658,7 @@ class Parser:
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
         ######
+        self.number_of_while += 1
         ex = self.pop()
         self.push(self.get_pbi())
         self.push(ex)
@@ -648,6 +676,7 @@ class Parser:
         for i in self.get_break_addresses():
             self.put_command('JP', end, '', '', i)
         ########
+        self.number_of_while -= 1
         return node
 
     def St(self):
@@ -706,10 +735,12 @@ class Parser:
         #######
         self.new_breakable()
         #######
+        self.number_of_switch += 1
         self.pass_terminal_edge(node, '{')
         self.pass_nonterminal_edge(node, 'Ca_ss', self.Ca_ss)
         self.pass_nonterminal_edge(node, 'De_s', self.De_s)
         self.pass_terminal_edge(node, '}')
+        self.number_of_switch -= 1
         #######
         end = self.get_pbi()
         for i in self.get_break_addresses():
@@ -830,6 +861,7 @@ class Parser:
             ######
             ex = self.pop()
             var = self.pop()
+            self.check_assign_types(ex, var)
             self.add_command('ASSIGN', ex, var, '')
             self.push(ex)
             ######
@@ -861,8 +893,10 @@ class Parser:
             # print(relop)
             a1 = self.pop()
             if relop == '==':
+                self.check_assign_types(a1, a2)
                 self.add_command('EQ', a1, a2, t)
             else:
+                self.check_assign_types(a1, a2)
                 self.add_command('LT', a1, a2, t)
             self.push(t)
             ##########
@@ -896,8 +930,10 @@ class Parser:
             addop = self.pop()
             a1 = self.pop()
             if addop == '+':
+                self.check_assign_types(a1, a2)
                 self.add_command('ADD', a1, a2, t)
             else:
+                self.check_assign_types(a1, a2)
                 self.add_command('SUB', a1, a2, t)
             self.push(t)
             ########
@@ -926,7 +962,10 @@ class Parser:
             self.pass_nonterminal_edge(node, 'Si_fa', self.Si_fa)
             ########
             t = self.get_temp()
-            self.add_command('MULT', self.pop(), self.pop(), t)
+            t1 = self.pop()
+            t2 = self.pop()
+            self.check_assign_types(t1, t2)
+            self.add_command('MULT', t1, t2, t)
             self.push(t)
             #########
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
@@ -992,7 +1031,11 @@ class Parser:
         self.skip_command()
         ###########
         self.pass_terminal_edge(node, '(')
+        self.temp_call_params = []
+        id = self.int_stack[-2]
         self.pass_nonterminal_edge(node, 'Args', self.Args)
+        self.check_use_of_func(id)
+        self.temp_call_params = []
         self.pass_terminal_edge(node, ')')
         #########
         print(self.int_stack)
@@ -1053,7 +1096,9 @@ class Parser:
         node = ParseNode('Arg_l')
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         #########
-        self.add_command('ASSIGN', self.pop(), '@'+str(self.sp), '')
+        temp = self.pop()
+        self.temp_call_params.append(temp)
+        self.add_command('ASSIGN', temp, '@'+str(self.sp), '')
         self.add_command('ADD', self.sp, '#'+str(self.word_length), self.sp)
         #########
         self.pass_nonterminal_edge(node, 'Arg_l1', self.Arg_l1)
@@ -1065,8 +1110,107 @@ class Parser:
             self.pass_terminal_edge(node, ',')
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
             #########
-            self.add_command('ASSIGN', self.pop(), '@'+str(self.sp), '')
+            temp = self.pop()
+            self.temp_call_params.append(temp)
+            self.add_command('ASSIGN', temp, '@'+str(self.sp), '')
             self.add_command('ADD', self.sp, '#' + str(self.word_length), self.sp)
             #########
             self.pass_nonterminal_edge(node, 'Arg_l1', self.Arg_l1)
         return node
+
+    def check_define_var_or_func(self, id):
+        for var in self.vars:
+            if var == '[':
+                continue
+            if var.id == id:
+                self.semantic_errors += [id + " is defined."]
+                self.make_i = False
+        if self.functions.__len__() == 0:
+            return
+        if self.functions[-1] == '[':
+            for func in self.functions[:-2]:
+                if func == '[':
+                    continue
+                if func[0] == id:
+                    self.semantic_errors += [id + " is defined."]
+                    self.make_i = False
+        else:
+            for func in self.functions:
+                if func == '[':
+                    continue
+                if func[0] == id:
+                    self.semantic_errors += [id + " is defined."]
+                    self.make_i = False
+
+    def check_use_of_var(self, id):
+        for var in self.vars:
+            if var == '[':
+                continue
+            if var.id == id:
+                return
+        self.semantic_errors += [id + " is not defined."]
+        self.make_i = False
+
+    def check_use_of_func(self, id):
+        params = []
+        for i in range(len(self.temp_call_params)):
+            x = self.temp_call_params[i]
+            if x is None:
+                return
+            if x == id:
+                break
+            if isinstance(x, str):
+                params.append('int')
+            else:
+                params.append(self.get_var_type_by_address(x))
+        for func in self.functions:
+            if func == '[':
+                continue
+            if func[0] == id:
+                if len(params) != len(func[3]):
+                    self.semantic_errors += ['Mismatch in numbers of arguments of ' + id]
+                    self.make_i = False
+                    return
+                for i in range(len(func[3])):
+                    if params[i] != func[3][i][1]:
+                        self.semantic_errors += [id + " bad params in " + str(i+1) + "\'th param. expected " +
+                                                 func[3][i][1] + " found " + params[i] + "."]
+                        self.make_i = False
+                        return
+                return
+        self.semantic_errors += [id + " is not defined."]
+        self.make_i = False
+
+    def check_assign_types(self, a, b):
+        if isinstance(a, str):
+            if a[0] == '#':
+                t1 = 'int'
+            else:
+                t1 = 'int'
+        else:
+            t1 = self.get_var_type_by_address(a)
+        if isinstance(b, str):
+            if b[0] == '#':
+                t2 = 'int'
+            else:
+                t2 = 'int'
+        else:
+            t2 = self.get_var_type_by_address(b)
+        if t1 != t2:
+            self.semantic_errors += [t1 + ", " + t2 + " type mismatch."]
+            self.make_i = False
+
+    def check_not_void(self, type):
+        if type == 'void':
+            self.semantic_errors += ['Illegal type of void']
+            self.make_i = False
+
+    def check_continue_place(self):
+        if self.number_of_while <= 0:
+            self.semantic_errors += ['No ’while’ found for ’continue’.']
+            self.make_i = False
+
+    def check_break_place(self):
+        if self.number_of_while <= 0 and self.number_of_switch <= 0:
+            self.semantic_errors += ['No ’while’ or ’switch’ found for ’break’.']
+            self.make_i = False

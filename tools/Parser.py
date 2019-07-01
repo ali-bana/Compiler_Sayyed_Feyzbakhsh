@@ -1,4 +1,4 @@
-from .lexicalanalyser import LexicalAnalyser, reader_writer
+from tools.lexicalanalyser import LexicalAnalyser, reader_writer
 
 
 class ParseNode:
