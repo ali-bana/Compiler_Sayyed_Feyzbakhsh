@@ -1,24 +1,24 @@
 Pro -> Dec_l eof.
 Dec_l -> Dec Dec_l 
     | .
-Dec -> Ty_s id Var_or_fun.
+Dec -> Ty_s id #push_id Var_or_fun #pop2.
 Var_or_fun -> Fun_d
     | Var_d.
-Fun_d -> ( Pars ) Com_s.
-Var_d ->  openc num closec semi
-    | semi.
+Fun_d -> #add_func ( Pars ) Com_s .
+Var_d ->  openc num closec semi #add_arr
+    | semi #add_var.
 Ty_s -> int 
-    | void.
-Pars -> int id Par1 Par_l1
-    | void Pars1.
-Pars1 -> id Par1 Par_l1
+    | void .#push_type  
+
+Pars -> int #push_type id #push_id Par1 Par_l1
+    | void #set_void Pars1.
+Pars1 -> id #error Par1 Par_l1
     | .
-Par_l -> Par Par_l1.
 Par_l1 -> and Par Par_l1
     | .
-Par -> Ty_s id Par1.
-Par1 -> openc closec
-    | .
+Par -> Ty_s id #push_id Par1.
+Par1 -> openc closec #parameter_array 
+    | #setparameter_addi. #pop2
 Com_s -> openg Dec_l St_l closeg.
 St_l -> St St_l 
     | .
@@ -28,55 +28,53 @@ St -> Ex_s
     | It_s 
     | Re_s 
     | Sw_s.
-Ex_s -> Ex semi
-    | continue semi 
-    | break semi 
+Ex_s -> Ex #pop semi
+    | continue semi #jp_s
+    | break semi #add_to list
     | semi.
-Sel_s -> if ( Ex ) St else St.
-It_s -> while ( Ex ) St.
+Sel_s -> if ( Ex ) #save St else #fill_jpf #save St #fill_jp.
+It_s -> while ( Ex ) #save_jpf #push_pc #new_break_list St #fill_jpf #pop2 #fill_breaks.
 Re_s -> return Re_s1.
 Re_s1 -> Ex semi
     | semi.
-Sw_s -> switch ( Ex ) openg Ca_ss De_s closeg.
+Sw_s -> switch ( Ex ) openg #new_break_list Ca_ss De_s closeg #fill_breaks.
 Ca_ss -> Ca_s Ca_ss 
     | .
-Ca_s -> case num donoghte St_l.
+Ca_s -> case num #cmp #save donoghte St_l #fill_jpf.
 De_s -> defualt donoghte St_l 
     | .
 Ex -> plus Fa Term1 Ad_ex1 Si_ex1
-    | minus Fa Term1 Ad_ex1 Si_ex1
-    | num Term1 Ad_ex1 Si_ex1
+    | minus Fa #negative Term1 Ad_ex1 Si_ex1
+    | num #push_num Term1 Ad_ex1 Si_ex1
     | ( Ex ) Term1 Ad_ex1 Si_ex1
-    | id Ex1.
+    | id #push_id Ex1.
 Ex1 -> Call Term1 Ad_ex1 Si_ex1
     | Var1 Ex2.
-Ex2 -> mosav Ex
+Ex2 -> mosav Ex #assign #pop2
     | Term1 Ad_ex1 Si_ex1.
-Si_ex -> Ad_ex Si_ex1.
-Si_ex1 -> Relop Ad_ex
+Si_ex1 -> Relop #push_relop Ad_ex #comp #push
     | .
 Relop -> bozorgtar 
     | mosavmosav.
 Ad_ex -> Term Ad_ex1.
-Ad_ex1 -> Addop Term Ad_ex1
+Ad_ex1 -> Addop #push_addop Term #add #pop3 #push Ad_ex1
     | .
 Addop -> plus 
     | minus.
 Term -> Si_fa Term1.
-Term1 -> * Si_fa Term1
+Term1 -> * Si_fa #mult Term1
     |.
 Si_fa -> Fa 
     | plus Fa 
-    | minus Fa.
+    | minus Fa #negative.
 Fa -> ( Ex ) 
-    | id Fa1
-    | num.
+    | id #push_id Fa1
+    | num #push_number.
 Fa1 -> Call 
     | Var1.
-Call -> ( Args ) .
-Var -> id Var1.
-Var1 -> openc Ex closec
-    | .
+Call -> ( Args ) #call.
+Var1 -> openc Ex closec #find_index
+    | #load_address.
 Args -> Arg_l 
     | .
 Arg_l -> Ex Arg_l1.

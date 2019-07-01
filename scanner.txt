@@ -1,0 +1,13 @@
+1. (keyword, void) (id, main) (symbol, () (keyword, void) (symbol, )) (symbol, {) 
+2. (keyword, int) (id, a) (symbol, ;) 
+3. (id, a) (symbol, =) (num, 0) (symbol, ;) 
+4. (keyword, while) (symbol, () (id, a) (symbol, >) (num, 2) (symbol, )) 
+5. (symbol, {) 
+6. (keyword, continue) (symbol, ;) 
+7. (keyword, break) (symbol, ;) 
+8. (id, a) (symbol, =) (id, a) (symbol, +) (num, 1) (symbol, ;) 
+9. (keyword, break) (symbol, ;) 
+10. (symbol, }) 
+11. (symbol, }) 
+12. 
+13. (EOF, EOF) 

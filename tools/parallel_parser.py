@@ -227,12 +227,12 @@ class Parser:
         # print('after push', self.int_stack)
 
     def pop(self):
-        print('poping')
+        # print('poping', self.int_stack)
         return self.int_stack.pop()
 
     def push(self, obj):
         self.int_stack.append(obj)
-        print('pushing')
+        # print('pushed', self.int_stack)
 
     def allocate(self, n):
         result = self.heap
@@ -273,6 +273,7 @@ class Parser:
 
     def pass_nonterminal_edge(self, node, non_terminal, function):
         # print(non_terminal)
+        # print(self.la.look_next())
         # print(self.firsts[non_terminal])
         # print(self.la.look_next())
         # print('...............\n')
@@ -287,6 +288,7 @@ class Parser:
                 node.add_child(c)
 
     def pass_terminal_edge(self, node, terminal):
+        # print(terminal)
         next = self.la.look_next()
         if self.terminal_checker(next, terminal):
             node.add_child(ParseNode(terminal))
@@ -324,6 +326,16 @@ class Parser:
             return terminal[1] in set
         else:
             return terminal[0] in set
+
+
+    def new_breakable(self):
+        self.break_list.append([])
+
+    def new_break(self, address):
+        self.break_list[len(self.break_list) - 1].append(address)
+
+    def get_break_addresses(self):
+        return self.break_list.pop()
 
     def Pro(self):
         root = ParseNode('Program')
@@ -534,9 +546,22 @@ class Parser:
             ####
             self.pass_terminal_edge(node, ';')
         elif self.terminal_checker(self.la.look_next(), 'continue'):
+            ##########
+            t = self.pop()
+            jp = self.pop()
+            start = self.pop()
+            self.add_command('JP', start, '', '')
+            self.push(start)
+            self.push(jp)
+            self.push(t)
+            #########
             self.pass_terminal_edge(node, 'continue')
             self.pass_terminal_edge(node, ';')
         elif self.terminal_checker(self.la.look_next(), 'break'):
+            #######
+            self.new_break(self.get_pbi())
+            self.skip_command()
+            #######
             self.pass_terminal_edge(node, 'break')
             self.pass_terminal_edge(node, ';')
         else:
@@ -558,6 +583,7 @@ class Parser:
         self.skip_command()
         #######
         self.pass_nonterminal_edge(node, 'St', self.St)
+
         self.pass_terminal_edge(node, 'else')
         #########
         i = self.get_pbi()
@@ -576,9 +602,32 @@ class Parser:
         node = ParseNode('It_s')
         self.pass_terminal_edge(node, 'while')
         self.pass_terminal_edge(node, '(')
+        #######
+        self.push(self.get_pbi())
+        self.new_breakable()
+        ######
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
+        ######
+        t = self.get_temp()
+        ex = self.pop()
+        self.add_command('LT', ex, '0', t)
+        self.push(self.get_pbi())
+        self.push(t)
+        self.skip_command()
+        ######
         self.pass_nonterminal_edge(node, 'St', self.St)
+
+        ########
+        t = self.pop()
+        jpf = self.pop()
+        jp = self.pop()
+        self.add_command('JP', jp, '', '')
+        end = self.get_pbi()
+        self.put_command('JPF', t, end, '', jpf)
+        for i in self.get_break_addresses():
+            self.put_command('JP', end, '', '', i)
+        ########
         return node
 
     def St(self):
@@ -663,6 +712,7 @@ class Parser:
 
     def Ex(self):
         node = ParseNode('Ex')
+        # print('sdfsdfdsf', self.la.look_next())
         if self.terminal_checker(self.la.look_next(), '+'):
             self.pass_terminal_edge(node, '+')
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
@@ -752,8 +802,8 @@ class Parser:
             t = self.get_temp()
             a2 = self.pop()
             relop = self.pop()
-            print(a2)
-            print(relop)
+            # print(a2)
+            # print(relop)
             a1 = self.pop()
             if relop == '==':
                 self.add_command('EQ', a1, a2, t)

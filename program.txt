@@ -1,5 +1,12 @@
 void main(void){
 int a;
-if(a>6) {a=1;} else {a=2;}
+a = 0;
+while ( a > 2 )
+{
+continue;
+break;
+a = a + 1;
+break;
+}
 }
 
