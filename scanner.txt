@@ -1,18 +1,6 @@
 1. (keyword, void) (id, main) (symbol, () (keyword, void) (symbol, )) (symbol, {) 
-2. (keyword, int) (id, a) (symbol, ;) 
-3. (id, a) (symbol, =) (num, 0) (symbol, ;) 
-4. (keyword, switch) (symbol, () (id, a) (symbol, +) (num, 5) (symbol, )) 
-5. (symbol, {) 
-6. (keyword, case) (num, 2) (symbol, :) 
-7. (id, a) (symbol, =) (num, 1) (symbol, ;) 
-8. (keyword, case) (num, 3) (symbol, :) 
-9. (id, a) (symbol, =) (symbol, -) (num, 1) (symbol, ;) 
-10. (keyword, break) (symbol, ;) 
-11. (keyword, default) (symbol, :) 
-12. (keyword, break) (symbol, ;) 
-13. (id, a) (symbol, =) (num, 0) (symbol, ;) 
-14. (symbol, }) 
-15. 
-16. (symbol, }) 
-17. 
-18. (EOF, EOF) 
+2. (keyword, int) (id, a) (symbol, [) (num, 4) (symbol, ]) (symbol, ;) 
+3. (keyword, int) (id, b) (symbol, [) (num, 5) (symbol, ]) (symbol, ;) 
+4. (symbol, }) 
+5. 
+6. (EOF, EOF) 

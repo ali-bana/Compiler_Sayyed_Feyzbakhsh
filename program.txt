@@ -1,17 +1,5 @@
 void main(void){
-	int a;
-	a = 0;
-	switch(a + 5)
-	{
-		case 2:
-			a = 1;
-		case 3:
-			a = -1;
-			break;
-		default:
-			break;
-			a = 0;
-	}
-
+	int a[4];
+	int b[5];
 }
 

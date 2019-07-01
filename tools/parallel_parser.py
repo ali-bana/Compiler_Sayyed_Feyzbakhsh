@@ -164,11 +164,12 @@ class Parser:
         self.break_list = []
         self.var_section = 500
         self.temp_i = 700
-        self.heap = 1000
+        self.heap = 1004
         self.pb = []
         self.word_length = 4
         self.vars = []
         self.functions = []
+        self.heap_reg = 1000
 
 
 
@@ -344,6 +345,7 @@ class Parser:
     def Pro(self):
         root = ParseNode('Program')
         #########
+        self.add_command('ASSIGN', '#'+str(self.heap), self.heap_reg, '')
         self.skip_command()
         #######
         # if self.in_checker(self.la.look_next(), self.firsts['Dec_l']):
@@ -418,7 +420,7 @@ class Parser:
         self.pass_terminal_edge(node, '(')
         #####
         if func_name == 'main' and self.la.look_next()[0] == 'void':
-            self.put_command('JP', self.get_pbi(), '', '', 0)
+            self.put_command('JP', self.get_pbi(), '', '', 1)
         ####
         self.pass_nonterminal_edge(node, 'Pars', function=self.Pars)
         self.pass_terminal_edge(node, ')')
@@ -436,12 +438,13 @@ class Parser:
             self.pass_terminal_edge(node, ']')
             self.pass_terminal_edge(node, ';')
             ######
-            const = self.allocate(int(self.pop()))
+            size = int(self.pop()) * self.word_length
             id = self.pop()
             self.pop()
             self.add_var(id, 'array')
             var_addr = self.get_var(id)
-            self.add_command('ASSIGN', '#'+str(const), str(var_addr), '')
+            self.add_command('ASSIGN', self.heap_reg, str(var_addr), '')
+            self.add_command('ADD', self.heap_reg, '#'+str(size), self.heap_reg)
             ######
         else:
             #
