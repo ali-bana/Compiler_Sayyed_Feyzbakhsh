@@ -1,8 +1,0 @@
-1. (keyword, void) (id, main) (symbol, () (keyword, void) (symbol, )) (symbol, {) 
-2. (keyword, int) (id, a23) (symbol, ;) 
-3. (keyword, int) (id, d) (symbol, [) (num, 23) (symbol, ]) (symbol, ;) 
-4. (id, a23) (symbol, =) (num, 45) (symbol, +) (symbol, -) (num, 32) (num, 4) (symbol, +) 
-5. (id, d) (symbol, [) (num, 4) (symbol, ]) (symbol, *) (id, a) (symbol, ;) 
-6. (id, return2) 
-7. (num, 23) 
-8. (symbol, }) (EOF, EOF) 

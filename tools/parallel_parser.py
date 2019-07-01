@@ -16,6 +16,8 @@ class Variable:
         self.type = type
         self.accessable = True
 
+    def to_string(self):
+        return '(' + 'id=' + self.id + ' ' + 'address=' + str(self.address) + ' ' + 'type=' + self.type + ')' + ' '
 
 
 
@@ -156,7 +158,7 @@ class Parser:
         self.firsts['Args'].extend(self.follows['Args'])
         self.firsts['Arg_l1'].extend(self.follows['Arg_l1'])
 
-        self.parse_stack = []
+        self.int_stack = []
         self.make_i = True
         self.id_list = []
         self.break_list = []
@@ -166,6 +168,7 @@ class Parser:
         self.pb = []
         self.word_length = 4
         self.vars = []
+        self.functions = []
 
 
 
@@ -174,8 +177,10 @@ class Parser:
         self.temp_i += self.word_length
         return result
 
-    def add_var(self, type, id, address):
-        self.vars.append(Variable(id, address, type))
+    def add_var(self, id, type):
+        self.vars.append(Variable(id, self.var_section, type))
+        self.var_section += self.word_length
+        self.print_vars()
 
     def sub_scope(self):
         self.vars.append('[')
@@ -193,14 +198,58 @@ class Parser:
                 return self.vars[i].address
 
     def add_command(self, command, add1, add2, add3):
-        self.pb.append('(' + command + ', ' + add1 + ', ' + add2 + ', ' + add3 + ')')
+        self.pb.append('(' + command + ', ' + str(add1) + ', ' + str(add2) + ', ' + str(add3) + ')')
 
     def put_command(self, command, add1, add2, add3, i):
-        self.pb[i] = '(' + command + ', ' + add1 + ', ' + add2 + ', ' + add3 + ')'
+        self.pb[i] = '(' + command + ', ' + str(add1) + ', ' + str(add2) + ', ' + str(add3) + ')'
+
+    def skip_command(self):
+        self.pb.append('')
 
     def get_pbi(self):
         return len(self.pb)
 
+    def get_function(self, id):
+        for f in self.functions:
+            if f[0] == id:
+                return f
+
+    def add_function(self, id, address, type):
+        self.functions.append([id, address, type, []])
+        # print(self.functions)
+
+
+    def add_parameter(self, parameter_id, type):
+        self.functions[len(self.functions)-1][3].append([parameter_id, type])
+
+    def push_tocken(self):
+        self.int_stack.append(self.la.look_next()[0])
+        # print('after push', self.int_stack)
+
+    def pop(self):
+        print('poping')
+        return self.int_stack.pop()
+
+    def push(self, obj):
+        self.int_stack.append(obj)
+        print('pushing')
+
+    def allocate(self, n):
+        result = self.heap
+        self.heap += self.word_length * n
+        return result
+
+
+
+
+    def print_vars(self):
+        # print('into vars')
+        # for v in self.vars:
+        #     if v == '[':
+        #         print(v, end=' ')
+        #     else:
+        #         print(v.to_string(), end=' ')
+        pass
 
     def write_error(self, error):
         f = open(self.errors_path, 'a')
@@ -278,6 +327,9 @@ class Parser:
 
     def Pro(self):
         root = ParseNode('Program')
+        #########
+        self.skip_command()
+        #######
         # if self.in_checker(self.la.look_next(), self.firsts['Dec_l']):
         #     c1 = self.Dec_l()
         #     root.add_child(c1)
@@ -293,6 +345,14 @@ class Parser:
             self.write_error(str(next[2]) + ': Syntax Error! Malformed Input')
         c2 = ParseNode('EOF')
         root.add_child(c2)
+
+        #testing
+        print('...............')
+        # print(self.vars)
+        # print(self.functions)
+        print(self.pb)
+
+
         return root
 
     def Dec_l(self):
@@ -316,6 +376,9 @@ class Parser:
         node = ParseNode('Dec')
 
         self.pass_nonterminal_edge(node, 'Ty_s', self.Ty_s)
+        ######
+        self.push_tocken()
+        ######
         self.pass_terminal_edge(node, 'id')
         self.pass_nonterminal_edge(node, 'Var_or_fun', self.Var_or_fun)
         return node
@@ -331,28 +394,56 @@ class Parser:
 
     def Fun_d(self):
         node = ParseNode('Fun_d')
-
+        #
+        func_name = self.pop()
+        self.add_function(func_name, self.get_pbi(), self.pop())
+        self.sub_scope()
+        #
         self.pass_terminal_edge(node, '(')
+        #####
+        if func_name == 'main' and self.la.look_next()[0] == 'void':
+            self.put_command('JP', self.get_pbi(), '', '', 0)
+        ####
         self.pass_nonterminal_edge(node, 'Pars', function=self.Pars)
         self.pass_terminal_edge(node, ')')
+
         self.pass_nonterminal_edge(node, 'Com_s', function=self.Com_s)
+        self.close_scope()
         return node
 
     def Var_d(self):
         node = ParseNode('Var_d')
         if self.la.look_next()[0] == '[':
             self.pass_terminal_edge(node, '[')
+            self.push_tocken()
             self.pass_terminal_edge(node, 'num')
             self.pass_terminal_edge(node, ']')
             self.pass_terminal_edge(node, ';')
+            ######
+            const = self.allocate(int(self.pop()))
+            id = self.pop()
+            self.pop()
+            self.add_var(id, 'array')
+            var_addr = self.get_var(id)
+            self.add_command('ASSIGN', '#'+str(const), str(var_addr), '')
+            ######
         else:
+            #
+            self.add_var(self.pop(), self.pop())
+            #
             self.pass_terminal_edge(node, ';')
         return node
 
     def Pars(self):
         node = ParseNode('Pars')
         if self.la.look_next()[0] == 'int':
+            ######
+            self.push_tocken()
+            ######
             self.pass_terminal_edge(node, 'int')
+            ####
+            self.push_tocken()
+            ####
             self.pass_terminal_edge(node, 'id')
             self.pass_nonterminal_edge(node, 'Par1', self.Par1)
             self.pass_nonterminal_edge(node, 'Par_l1', self.Par_l1)
@@ -388,12 +479,18 @@ class Parser:
     def Par(self):
         node = ParseNode('Par')
         self.pass_nonterminal_edge(node, 'Ty_s', self.Ty_s)
+        #####
+        self.push_tocken()
+        #####
         self.pass_terminal_edge(node, 'id')
         self.pass_nonterminal_edge(node, 'Par1', self.Par1)
         return node
 
     def Ty_s(self):
         node = ParseNode('Ty_s')
+        ###########
+        self.push_tocken()
+        ############
         if self.terminal_checker(self.la.look_next(), 'int'):
             self.pass_terminal_edge(node, 'int')
         else:
@@ -405,6 +502,19 @@ class Parser:
         if self.terminal_checker(self.la.look_next(), '['):
             self.pass_terminal_edge(node, '[')
             self.pass_terminal_edge(node, ']')
+            ######
+            id = self.pop()
+            self.add_parameter(id, 'array')
+            self.add_var(id, 'array')
+            self.pop()
+            #######
+        else:
+            ######
+            id = self.pop()
+            type = self.pop()
+            self.add_parameter(id, type)
+            self.add_var(id, type)
+            #######
         return node
 
     def Com_s(self):
@@ -419,6 +529,9 @@ class Parser:
         node = ParseNode('Ex_s')
         if self.in_checker(self.la.look_next(), self.firsts['Ex']):
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
+            ####
+            self.pop()
+            ####
             self.pass_terminal_edge(node, ';')
         elif self.terminal_checker(self.la.look_next(), 'continue'):
             self.pass_terminal_edge(node, 'continue')
@@ -436,9 +549,27 @@ class Parser:
         self.pass_terminal_edge(node, '(')
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
+        #######
+        t = self.get_temp()
+        ex = self.pop()
+        self.add_command('LT', ex, '#0', t)
+        self.push(self.get_pbi())
+        self.push(t)
+        self.skip_command()
+        #######
         self.pass_nonterminal_edge(node, 'St', self.St)
         self.pass_terminal_edge(node, 'else')
+        #########
+        i = self.get_pbi()
+        self.skip_command()
+        self.put_command('JPF', self.pop(), self.get_pbi(), '', self.pop())
+        self.push(i)
+        ########
+
         self.pass_nonterminal_edge(node, 'St', self.St)
+        #######
+        self.put_command('JP', self.get_pbi(), '', '', self.pop())
+        ############
         return node
 
     def It_s(self):
@@ -541,10 +672,18 @@ class Parser:
         elif self.terminal_checker(self.la.look_next(), '-'):
             self.pass_terminal_edge(node, '-')
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
+            ######
+            var_add = self.pop()
+            self.add_command('SUB', '#0', var_add, var_add)
+            self.push(var_add)
+            #######
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
             self.pass_nonterminal_edge(node, 'Ad_ex1', self.Ad_ex1)
             self.pass_nonterminal_edge(node, 'Si_ex1', self.Si_ex1)
         elif self.terminal_checker(self.la.look_next(), 'num'):
+            ########
+            self.push('#'+self.la.look_next()[0])
+            #######
             self.pass_terminal_edge(node, 'num')
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
             self.pass_nonterminal_edge(node, 'Ad_ex1', self.Ad_ex1)
@@ -559,6 +698,9 @@ class Parser:
         else:
             # print('correct expression')
             # print(self.la.look_next())
+            ####
+            self.push_tocken()
+            ####
             self.pass_terminal_edge(node, 'id')
             self.pass_nonterminal_edge(node, 'Ex1', self.Ex1)
         return node
@@ -580,6 +722,12 @@ class Parser:
         if self.terminal_checker(self.la.look_next(), '='):
             self.pass_terminal_edge(node, '=')
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
+            ######
+            ex = self.pop()
+            var = self.pop()
+            self.add_command('ASSIGN', var, ex, '')
+            self.push(ex)
+            ######
         else:
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
             self.pass_nonterminal_edge(node, 'Ad_ex1', self.Ad_ex1)
@@ -595,8 +743,24 @@ class Parser:
     def Si_ex1(self):
         node = ParseNode('Si_ex1')
         if self.in_checker(self.la.look_next(), self.firsts['Relop']):
+            #######
+            self.push_tocken()
+            ##########
             self.pass_nonterminal_edge(node, 'Relop', self.Relop)
             self.pass_nonterminal_edge(node, 'Ad_ex', self.Ad_ex)
+            #######
+            t = self.get_temp()
+            a2 = self.pop()
+            relop = self.pop()
+            print(a2)
+            print(relop)
+            a1 = self.pop()
+            if relop == '==':
+                self.add_command('EQ', a1, a2, t)
+            else:
+                self.add_command('LT', a1, a2, t)
+            self.push(t)
+            ##########
         return node
 
     def Relop(self):
@@ -616,8 +780,22 @@ class Parser:
     def Ad_ex1(self):
         node = ParseNode('Ad_ex1')
         if self.in_checker(self.la.look_next(), self.firsts['Addop']):
+            #######
+            self.push_tocken()
+            #######
             self.pass_nonterminal_edge(node, 'Addop', self.Addop)
             self.pass_nonterminal_edge(node, 'Term', self.Term)
+            #######
+            t = self.get_temp()
+            a2 = self.pop()
+            addop = self.pop()
+            a1 = self.pop()
+            if addop == '+':
+                self.add_command('ADD', a1, a2, t)
+            else:
+                self.add_command('SUB', a1, a2, t)
+            self.push(t)
+            ########
             self.pass_nonterminal_edge(node, 'Ad_ex1', self.Ad_ex1)
         return node
 
@@ -641,6 +819,11 @@ class Parser:
         if self.terminal_checker(self.la.look_next(), '*'):
             self.pass_terminal_edge(node, '*')
             self.pass_nonterminal_edge(node, 'Si_fa', self.Si_fa)
+            ########
+            t = self.get_temp()
+            self.add_command('MULT', self.pop(), self.pop(), t)
+            self.push(t)
+            #########
             self.pass_nonterminal_edge(node, 'Term1', self.Term1)
         return node
 
@@ -654,6 +837,10 @@ class Parser:
         elif self.terminal_checker(self.la.look_next(), '-'):
             self.pass_terminal_edge(node, '-')
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
+            #######
+            fa = self.pop()
+            self.add_command('SUB', '#0', fa, fa)
+            ######
         else:
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
 
@@ -666,10 +853,16 @@ class Parser:
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
             self.pass_terminal_edge(node, ')')
         elif self.terminal_checker(self.la.look_next(), 'id'):
+            ######
+            self.push_tocken()
+            ############
             self.pass_terminal_edge(node, 'id')
             self.pass_nonterminal_edge(node, 'Fa1', self.Fa1)
 
         else:
+            ########
+            self.push('#' + self.la.look_next()[0])
+            #########
             self.pass_terminal_edge(node, 'num')
         return node
 
@@ -700,6 +893,18 @@ class Parser:
             self.pass_terminal_edge(node, '[')
             self.pass_nonterminal_edge(node, 'Ex', self.Ex)
             self.pass_terminal_edge(node, ']')
+            ######
+            t = str(self.get_temp())
+            ex = self.pop()
+            var = self.get_var(self.pop())
+            self.add_command('ADD', var, ex, t)
+            self.push('@'+t)
+            ######
+        else:
+            ########
+            var_add = self.get_var(self.pop())
+            self.push(var_add)
+            ######
         return node
 
     def Args(self):

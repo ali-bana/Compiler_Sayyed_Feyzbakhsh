@@ -1,5 +1,0 @@
-1. 
-2. 
-3. 
-4. (., invalid input) (/, invalid input) 
-5. (23, names should start with letters) 
