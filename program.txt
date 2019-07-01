@@ -1,12 +1,17 @@
 void main(void){
-int a;
-a = 0;
-while ( a > 2 )
-{
-continue;
-break;
-a = a + 1;
-break;
-}
+	int a;
+	a = 0;
+	switch(a + 5)
+	{
+		case 2:
+			a = 1;
+		case 3:
+			a = -1;
+			break;
+		default:
+			break;
+			a = 0;
+	}
+
 }
 

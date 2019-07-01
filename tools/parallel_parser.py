@@ -337,6 +337,10 @@ class Parser:
     def get_break_addresses(self):
         return self.break_list.pop()
 
+    def print_intermediate(self):
+        for i in range(len(self.pb)):
+            print(i, self.pb[i])
+
     def Pro(self):
         root = ParseNode('Program')
         #########
@@ -362,7 +366,7 @@ class Parser:
         print('...............')
         # print(self.vars)
         # print(self.functions)
-        print(self.pb)
+        self.print_intermediate()
 
 
         return root
@@ -674,10 +678,18 @@ class Parser:
         self.pass_terminal_edge(node, '(')
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
+        #######
+        self.new_breakable()
+        #######
         self.pass_terminal_edge(node, '{')
         self.pass_nonterminal_edge(node, 'Ca_ss', self.Ca_ss)
         self.pass_nonterminal_edge(node, 'De_s', self.De_s)
         self.pass_terminal_edge(node, '}')
+        #######
+        end = self.get_pbi()
+        for i in self.get_break_addresses():
+            self.put_command('JP', end, '', '', i)
+        #######
         return node
 
     def Ca_ss(self):
@@ -690,9 +702,25 @@ class Parser:
     def Ca_s(self):
         node = ParseNode('Ca_s')
         self.pass_terminal_edge(node, 'case')
+        ##########
+        exp = self.pop()
+        t = self.get_temp()
+        number = self.la.look_next()[0]
+        self.add_command('EQ', exp, '#'+number, t)
+        self.add_command('JPF', t, self.get_pbi()+2, '')
+        self.push(exp)
+        self.push(t)
+        self.push(self.get_pbi())
+        self.skip_command()
+        ##########
         self.pass_terminal_edge(node, 'num')
         self.pass_terminal_edge(node, ':')
         self.pass_nonterminal_edge(node, 'St_l', self.St_l)
+        #########
+        addr = self.pop()
+        t = self.pop()
+        self.put_command('JP', self.get_pbi(), '', '', addr)
+        #########
         return node
 
     def De_s(self):
