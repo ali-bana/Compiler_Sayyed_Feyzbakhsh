@@ -413,8 +413,9 @@ class Parser:
         root.add_child(c2)
 
         #############
-        self.add_command('JP', self.get_function('main')[1], '', '')
-        self.put_command('JP', self.get_pbi(), '', '', int(self.pop()))
+        if self.make_i:
+            self.add_command('JP', self.get_function('main')[1], '', '')
+            self.put_command('JP', self.get_pbi(), '', '', int(self.pop()))
         #############
         #testing
         print('...............')
