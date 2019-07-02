@@ -176,6 +176,9 @@ class Parser:
         self.stack_start = 2004
         self.sp = 2000
         self.return_register = 3000
+
+        self.continues = []
+
         self.temp_call_params = []
         self.number_of_while = 0
         self.number_of_switch = 0
@@ -598,13 +601,8 @@ class Parser:
             self.pass_terminal_edge(node, ';')
         elif self.terminal_checker(self.la.look_next(), 'continue'):
             ##########
-            t = self.pop()
-            jp = self.pop()
-            start = self.pop()
-            self.add_command('JP', start, '', '')
-            self.push(start)
-            self.push(jp)
-            self.push(t)
+            self.continues[len(self.continues)-1].append(self.get_pbi())
+            self.skip_command()
             #########
             self.pass_terminal_edge(node, 'continue')
             self.pass_terminal_edge(node, ';')
@@ -657,6 +655,7 @@ class Parser:
         ######
         self.pass_nonterminal_edge(node, 'Ex', self.Ex)
         self.pass_terminal_edge(node, ')')
+        self.continues.append([])
         ######
         self.number_of_while += 1
         ex = self.pop()
@@ -675,6 +674,9 @@ class Parser:
         self.put_command('JPF', t, end, '', jpf)
         for i in self.get_break_addresses():
             self.put_command('JP', end, '', '', i)
+
+        for i in self.continues.pop():
+            self.put_command('JP', jp, '', '', i)
         ########
         self.number_of_while -= 1
         return node
