@@ -6,11 +6,16 @@ int minus(int a, int b)
 	return a - b;
 }
 
+void m(int a)
+{
+	output(a);
+}
+
 
 void main(void)
 {
 	t = 0;
 	t = minus(3, 2);
-	output(t);
-	output(t);
+	m(t);
+	m(t);
 }

@@ -6,11 +6,16 @@
 6. (keyword, return) (id, a) (symbol, -) (id, b) (symbol, ;) 
 7. (symbol, }) 
 8. 
-9. 
-10. (keyword, void) (id, main) (symbol, () (keyword, void) (symbol, )) 
-11. (symbol, {) 
-12. (id, t) (symbol, =) (num, 0) (symbol, ;) 
-13. (id, t) (symbol, =) (id, minus) (symbol, () (num, 3) (symbol, ,) (num, 2) (symbol, )) (symbol, ;) 
-14. (id, output) (symbol, () (id, t) (symbol, )) (symbol, ;) 
-15. (id, output) (symbol, () (id, t) (symbol, )) (symbol, ;) 
-16. (symbol, }) (EOF, EOF) 
+9. (keyword, void) (id, m) (symbol, () (keyword, int) (id, a) (symbol, )) 
+10. (symbol, {) 
+11. (id, output) (symbol, () (id, a) (symbol, )) (symbol, ;) 
+12. (symbol, }) 
+13. 
+14. 
+15. (keyword, void) (id, main) (symbol, () (keyword, void) (symbol, )) 
+16. (symbol, {) 
+17. (id, t) (symbol, =) (num, 0) (symbol, ;) 
+18. (id, t) (symbol, =) (id, minus) (symbol, () (num, 3) (symbol, ,) (num, 2) (symbol, )) (symbol, ;) 
+19. (id, m) (symbol, () (id, t) (symbol, )) (symbol, ;) 
+20. (id, m) (symbol, () (id, t) (symbol, )) (symbol, ;) 
+21. (symbol, }) (EOF, EOF) 

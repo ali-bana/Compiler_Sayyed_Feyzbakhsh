@@ -505,6 +505,10 @@ class Parser:
         ######
         if self.make_i:
             # print(self.int_stack)
+            if not is_main:
+                self.add_command('SUB', self.sp, '#' + str(self.word_length), self.sp)
+                self.add_command('ASSIGN', '@' + str(self.sp), self.return_register, '')
+                self.add_command('JP', '@' + str(self.return_register), '', '')
             if is_main:
                 self.skip_command()
             add = self.pop()
