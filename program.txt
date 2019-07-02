@@ -1,16 +1,27 @@
-int t;
+int array[10];
+
+int func(int a) {
+  void f1(void){
+  }
 
 
-int minus(int a, int b)
-{
-	return a - b;
+  void f2(void) {
+
+  }
+
+  if (a < 10) {
+    
+    return 0;
+    
+  }
+  else
+    return 1;
 }
-
 
 void main(void)
 {
-	t = 0;
-	t = minus(3, 2);
-	output(t);
-	output(t);
+  int a;
+  a = 2;
+  a = 1 + -2 * (-1 + (45 < a));
+  output(func(5));
 }
