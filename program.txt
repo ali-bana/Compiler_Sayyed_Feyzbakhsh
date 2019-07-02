@@ -1,5 +1,9 @@
+
 void main(void)
 {
-  int a;  
-  a = 1 + -1;
+    int o[2];
+	int t;
+	o[1] = 2;
+	t = 1 + -o;
+	output(t);
 }
