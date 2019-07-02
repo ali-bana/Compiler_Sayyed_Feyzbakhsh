@@ -1,9 +1,17 @@
 
 void main(void)
 {
-    int o[2];
 	int t;
-	o[1] = 2;
-	t = 1 + -o;
-	output(t);
+	t = 2;
+	switch(t)
+	{
+		case 2:
+			output(2);
+		case 1:
+			output(1);
+		default:
+			output(3);
+			
+
+	}
 }

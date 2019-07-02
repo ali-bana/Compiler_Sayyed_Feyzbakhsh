@@ -511,6 +511,7 @@ class Parser:
                 self.add_command('JP', '@' + str(self.return_register), '', '')
             if is_main:
                 self.skip_command()
+
             add = self.pop()
             self.put_command('JP', str(self.get_pbi()),'', '', int(add))
             if is_main:
@@ -812,6 +813,7 @@ class Parser:
             end = self.get_pbi()
             for i in self.get_break_addresses():
                 self.put_command('JP', end, '', '', i)
+            self.pop()
         #######
         return node
 
@@ -831,7 +833,6 @@ class Parser:
             t = self.get_temp()
             number = self.la.look_next()[0]
             self.add_command('EQ', exp, '#'+number, t)
-            self.add_command('JPF', t, self.get_pbi()+2, '')
             self.push(exp)
             self.push(t)
             self.push(self.get_pbi())
@@ -844,7 +845,7 @@ class Parser:
         if self.make_i:
             addr = self.pop()
             t = self.pop()
-            self.put_command('JP', self.get_pbi(), '', '', addr)
+            self.put_command('JPF', t, self.get_pbi(), '', addr)
         #########
         return node
 
@@ -1121,19 +1122,19 @@ class Parser:
         self.pass_terminal_edge(node, ')')
         #########
         if self.make_i:
-            print(self.int_stack)
+            # print(self.int_stack)
             add = self.pop()
             self.put_command('ASSIGN', '#'+str(self.get_pbi() + 1), '@'+str(self.sp), '', add)
             add += 1
             self.put_command('ADD', self.sp, '#'+str(self.word_length), self.sp, add)
-            print('in', self.int_stack)
-            print(self.functions)
+            # print('in', self.int_stack)
+            # print(self.functions)
             func = self.get_function(self.pop())
             func_add = func[1]
             self.add_command('JP', func_add, '', '')
             #called the function
             if func[2] != 'void':
-                print('doole khar',func)
+                # print('doole khar',func)
                 t = self.get_temp()
                 self.add_command('SUB', self.sp, '#'+str(self.word_length), self.sp)
                 self.add_command('ASSIGN', '@'+str(self.sp), t, '')
