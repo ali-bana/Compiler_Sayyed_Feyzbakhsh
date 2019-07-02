@@ -1,12 +1,16 @@
-int b(int b, int n[]){
-    int l;
-    return l;
+int t;
+
+
+int minus(int a, int b)
+{
+	return a - b;
 }
 
-void main(void){
-	int p[15];
-	int lll[5];
-    int g[10];
-    g[1] = g[1] + g[4] * b(4)
-}
 
+void main(void)
+{
+	t = 0;
+	t = minus(3, 2);
+	output(t);
+	output(t);
+}

@@ -158,7 +158,7 @@ class Parser:
         self.firsts['Var1'].extend(self.follows['Var1'])
         self.firsts['Args'].extend(self.follows['Args'])
         self.firsts['Arg_l1'].extend(self.follows['Arg_l1'])
-
+        self.fun_name = ''
         self.int_stack = []
         self.make_i = True
         self.id_list = []
@@ -176,6 +176,7 @@ class Parser:
         self.stack_start = 2004
         self.sp = 2000
         self.return_register = 3000
+        self.has_main = False
 
         self.continues = []
 
@@ -386,6 +387,7 @@ class Parser:
         #########
         self.add_command('ASSIGN', '#'+str(self.heap), self.heap_reg, '')
         self.add_command('ASSIGN', '#'+str(self.stack_start), self.sp, '')
+        self.push(self.get_pbi())
         self.skip_command()
         self.functions.append(['output', self.get_pbi(), 'void', [['a', 'int']]])
         self.add_command('SUB', self.sp, '#4', self.sp)
@@ -394,6 +396,7 @@ class Parser:
         self.add_command('ASSIGN', '@'+str(self.sp), self.return_register, '')
         # self.add_command('PRINT', self.return_register, '', '')
         self.add_command('JP', '@'+str(self.return_register), '', '')
+        self.put_command('JP', self.get_pbi(), '', '', self.pop())
         #######
         # if self.in_checker(self.la.look_next(), self.firsts['Dec_l']):
         #     c1 = self.Dec_l()
@@ -411,11 +414,16 @@ class Parser:
         c2 = ParseNode('EOF')
         root.add_child(c2)
 
+        #############
+        self.add_command('JP', self.get_function('main')[1], '', '')
+        self.put_command('JP', self.get_pbi(), '', '', int(self.pop()))
+        #############
         #testing
         print('...............')
         # print(self.vars)
         # print(self.functions)
-        self.print_intermediate()
+        if self.make_i:
+            self.print_intermediate()
 
 
         return root
@@ -459,8 +467,16 @@ class Parser:
 
     def Fun_d(self):
         node = ParseNode('Fun_d')
+        is_main = False
         #
         if self.make_i:
+            print('midim too',self.int_stack)
+            name = self.pop()
+            type = self.pop()
+            self.push(self.get_pbi())
+            self.push(type)
+            self.push(name)
+            self.skip_command()
             func_name = self.pop()
             self.add_function(func_name, self.get_pbi(), self.pop())
             self.sub_scope()
@@ -470,7 +486,8 @@ class Parser:
         #####
         if self.make_i:
             if func_name == 'main' and self.la.look_next()[0] == 'void':
-                self.put_command('JP', self.get_pbi(), '', '', 2)
+                self.has_main = True
+                is_main = True
         ####
         self.pass_nonterminal_edge(node, 'Pars', function=self.Pars)
         ######
@@ -484,6 +501,17 @@ class Parser:
         self.pass_terminal_edge(node, ')')
 
         self.pass_nonterminal_edge(node, 'Com_s', function=self.Com_s)
+
+        ######
+        if self.make_i:
+            # print(self.int_stack)
+            if is_main:
+                self.skip_command()
+            add = self.pop()
+            self.put_command('JP', str(self.get_pbi()),'', '', int(add))
+            if is_main:
+                self.push(self.get_pbi()-1)
+        ######
         self.close_scope()
         return node
 
