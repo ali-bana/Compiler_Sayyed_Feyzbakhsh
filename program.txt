@@ -1,21 +1,5 @@
-int t;
-
-
-int minus(int a, int b)
-{
-	return a - b;
-}
-
-void m(int a)
-{
-	output(a);
-}
-
-
 void main(void)
 {
-	t = 0;
-	t = minus(3, 2);
-	m(t);
-	m(t);
+  int a;  
+  a = 1 + -1;
 }

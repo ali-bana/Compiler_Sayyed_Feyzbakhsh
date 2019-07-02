@@ -306,7 +306,7 @@ class Parser:
             self.dfs(c, level + 1)
 
     def pass_nonterminal_edge(self, node, non_terminal, function):
-        # print(non_terminal)
+        print(non_terminal, self.int_stack)
         # print(self.la.look_next())
         # print(self.firsts[non_terminal])
         # print(self.la.look_next())
@@ -470,7 +470,7 @@ class Parser:
         is_main = False
         #
         if self.make_i:
-            print('midim too',self.int_stack)
+            # print('midim too',self.int_stack)
             name = self.pop()
             type = self.pop()
             self.push(self.get_pbi())
@@ -481,6 +481,7 @@ class Parser:
             self.add_function(func_name, self.get_pbi(), self.pop())
             self.sub_scope()
             self.check_define_var_or_func(func_name)
+
         #
         self.pass_terminal_edge(node, '(')
         #####
@@ -488,6 +489,7 @@ class Parser:
             if func_name == 'main' and self.la.look_next()[0] == 'void':
                 self.has_main = True
                 is_main = True
+
         ####
         self.pass_nonterminal_edge(node, 'Pars', function=self.Pars)
         ######
@@ -497,10 +499,14 @@ class Parser:
                     break
                 self.add_command('SUB', self.sp, '#'+str(self.word_length), self.sp)
                 self.add_command('ASSIGN', '@'+str(self.sp), v.address, '')
+
         ######
         self.pass_terminal_edge(node, ')')
 
+
+
         self.pass_nonterminal_edge(node, 'Com_s', function=self.Com_s)
+        print(func_name, self.int_stack)
 
         ######
         if self.make_i:
@@ -511,6 +517,8 @@ class Parser:
                 self.add_command('JP', '@' + str(self.return_register), '', '')
             if is_main:
                 self.skip_command()
+
+            print(func_name,self.int_stack)
             add = self.pop()
             self.put_command('JP', str(self.get_pbi()),'', '', int(add))
             if is_main:
@@ -866,7 +874,6 @@ class Parser:
     def Ex(self):
         node = ParseNode('Ex')
         aaa = self.la.look_next()
-        # print('sdfsdfdsf', self.la.look_next())
         if self.terminal_checker(self.la.look_next(), '+'):
             self.pass_terminal_edge(node, '+')
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
@@ -923,9 +930,11 @@ class Parser:
         else:
             self.pass_nonterminal_edge(node, 'Var1', self.Var1)
             self.pass_nonterminal_edge(node, 'Ex2', self.Ex2)
+
         return node
 
     def Ex2(self):
+        # print('Ex2', self.int_stack)
         node = ParseNode('Ex2')
         aaa = self.la.look_next()
         if self.terminal_checker(self.la.look_next(), '='):
@@ -954,6 +963,7 @@ class Parser:
     def Si_ex1(self):
         node = ParseNode('Si_ex1')
         if self.in_checker(self.la.look_next(), self.firsts['Relop']):
+            print('in if')
             #######
             self.push_tocken()
             ##########
@@ -1062,6 +1072,7 @@ class Parser:
             if self.make_i:
                 fa = self.pop()
                 self.add_command('SUB', '#0', fa, fa)
+                self.push(fa)
             ######
         else:
             self.pass_nonterminal_edge(node, 'Fa', self.Fa)
@@ -1118,19 +1129,19 @@ class Parser:
         self.pass_terminal_edge(node, ')')
         #########
         if self.make_i:
-            print(self.int_stack)
+            # print(self.int_stack)
             add = self.pop()
             self.put_command('ASSIGN', '#'+str(self.get_pbi() + 1), '@'+str(self.sp), '', add)
             add += 1
             self.put_command('ADD', self.sp, '#'+str(self.word_length), self.sp, add)
-            print('in', self.int_stack)
-            print(self.functions)
+            # print('in', self.int_stack)
+            # print(self.functions)
             func = self.get_function(self.pop())
             func_add = func[1]
             self.add_command('JP', func_add, '', '')
             #called the function
             if func[2] != 'void':
-                print('doole khar',func)
+                # print('doole khar',func)
                 t = self.get_temp()
                 self.add_command('SUB', self.sp, '#'+str(self.word_length), self.sp)
                 self.add_command('ASSIGN', '@'+str(self.sp), t, '')
