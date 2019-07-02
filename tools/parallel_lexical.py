@@ -66,7 +66,7 @@ class LexicalAnalyser:
         self.parser = self.parse()
         self.has_ended = False
         self.last = None
-        self.soon_results = queue.Queue(maxsize=100)
+        self.soon_results = None
 
         self.is_comment = False
         self.line = 0
@@ -74,7 +74,7 @@ class LexicalAnalyser:
 
 
     def get_next(self):
-        if self.soon_results.empty():
+        if self.soon_results is None:
             if not self.has_ended:
                 temp = self.parser.__next__()
                 if temp[0] == 'EOF':
@@ -82,13 +82,13 @@ class LexicalAnalyser:
                     self.has_ended = True
                 return temp
             return self.last
-        a = self.soon_results.get()
+        a = self.soon_results
+        self.soon_results = None
         return a
 
     def look_next(self):
-        if not self.soon_results.empty():
-            temp = self.soon_results.get()
-            self.soon_results.put(temp)
+        if self.soon_results is not None:
+            temp = self.soon_results
             return temp
         if self.has_ended:
             return self.last
@@ -96,12 +96,12 @@ class LexicalAnalyser:
         if temp[0] == 'EOF':
             self.last = temp
             self.has_ended = True
-        self.soon_results.put(temp)
+        self.soon_results = temp
         return temp
 
 
     def parse(self):
-        simbols = [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '*', '=', '<', '>']
+        simbols = [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '*', '=', '<']
         white_space = [' ', '\n', '\t', '\v', '\r', '\f']
         key_words = ['if', 'else', 'while', 'void', 'int', 'break', 'continue', 'switch', 'default', 'case', 'return']
         result = []
@@ -165,8 +165,12 @@ class LexicalAnalyser:
                         result.append([token, 'id', line])##############################
                         yield [token, 'id', line]##############################
                     token = ''
-                    result.append([c, 'symbol', line])#################################
-                    yield [c, 'symbol', line]#################################
+                    if c == '<':
+                        result.append(['>', 'symbol', line])#################################
+                        yield ['>', 'symbol', line]#################################
+                    else:
+                        result.append([c, 'symbol', line])  #################################
+                        yield [c, 'symbol', line]##################
                 elif c in white_space:
                     if token in key_words:
                         result.append([token, 'keyword', line])#######################
