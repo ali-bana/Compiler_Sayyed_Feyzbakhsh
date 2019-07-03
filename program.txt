@@ -2,16 +2,9 @@
 void main(void)
 {
 	int t;
+	int y[5];
 	t = 2;
-	switch(t)
-	{
-		case 2:
-			output(2);
-		case 1:
-			output(1);
-		default:
-			output(3);
-			
-
-	}
+	t = t == 2;
+	y = y + t;
+	output(t);
 }

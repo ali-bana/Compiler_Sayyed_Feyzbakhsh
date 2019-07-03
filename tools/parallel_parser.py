@@ -33,6 +33,12 @@ class Parser:
         f = open(self.errors_path, 'w')
         f.write('')
         f.close()
+        f = open('all_errors.txt', 'w')
+        f.write('')
+        f.close()
+        f = open('intermediate_code.txt', 'w')
+        f.write('')
+        f.close()
         self.la = LexicalAnalyser(program_name)
         self.firsts = {
             'Pro': ['EOF', 'int', 'void'],
@@ -371,8 +377,11 @@ class Parser:
         return self.break_list.pop()
 
     def print_intermediate(self):
+        f = open('intermediate_code.txt', 'a')
         for i in range(len(self.pb)):
             print(str(i) + '\t' + self.pb[i])
+            f.write(str(i) + '\t' + self.pb[i] + '\n')
+        f.close()
 
     def get_function_address(self, id):
         for f in self.functions:
@@ -424,7 +433,7 @@ class Parser:
         if self.make_i:
             self.print_intermediate()
 
-
+        self.check_main()
         return root
 
     def Dec_l(self):
@@ -653,6 +662,7 @@ class Parser:
             ####
             self.pass_terminal_edge(node, ';')
         elif self.terminal_checker(self.la.look_next(), 'continue'):
+            self.check_continue_place()
             ##########
             if self.make_i:
                 self.continues[len(self.continues)-1].append(self.get_pbi())
@@ -661,6 +671,7 @@ class Parser:
             self.pass_terminal_edge(node, 'continue')
             self.pass_terminal_edge(node, ';')
         elif self.terminal_checker(self.la.look_next(), 'break'):
+            self.check_break_place()
             #######
             if self.make_i:
                 self.new_break(self.get_pbi())
@@ -1219,6 +1230,7 @@ class Parser:
                 continue
             if var.id == id:
                 self.semantic_errors += [id + " is defined."]
+                self.print_error(id + " is defined.")
                 self.make_i = False
         if self.functions.__len__() == 0:
             return
@@ -1228,6 +1240,7 @@ class Parser:
                     continue
                 if func[0] == id:
                     self.semantic_errors += [id + " is defined."]
+                    self.print_error(id + " is defined.")
                     self.make_i = False
         else:
             for func in self.functions:
@@ -1235,6 +1248,7 @@ class Parser:
                     continue
                 if func[0] == id:
                     self.semantic_errors += [id + " is defined."]
+                    self.print_error(id + " is defined.")
                     self.make_i = False
 
     def check_use_of_var(self, id):
@@ -1244,6 +1258,7 @@ class Parser:
             if var.id == id:
                 return
         self.semantic_errors += [id + " is not defined."]
+        self.print_error(id + " is not defined.")
         self.make_i = False
 
     def check_use_of_func(self, id):
@@ -1264,16 +1279,20 @@ class Parser:
             if func[0] == id:
                 if len(params) != len(func[3]):
                     self.semantic_errors += ['Mismatch in numbers of arguments of ' + id]
+                    self.print_error('Mismatch in numbers of arguments of ' + id)
                     self.make_i = False
                     return
                 for i in range(len(func[3])):
                     if params[i] != func[3][i][1]:
                         self.semantic_errors += [id + " bad params in " + str(i+1) + "\'th param. expected " +
                                                  func[3][i][1] + " found " + params[i] + "."]
+                        self.print_error(id + " bad params in " + str(i+1) + "\'th param. expected " +
+                                                 func[3][i][1] + " found " + params[i] + ".")
                         self.make_i = False
                         return
                 return
-        self.semantic_errors += [id + " is not defined."]
+        self.semantic_errors += [str(id) + " is not defined."]
+        self.print_error(str(id) + " is not defined.")
         self.make_i = False
 
     def check_assign_types(self, a, b):
@@ -1293,19 +1312,38 @@ class Parser:
             t2 = self.get_var_type_by_address(b)
         if t1 != t2:
             self.semantic_errors += [t1 + ", " + t2 + " type mismatch."]
+            self.print_error(t1 + ", " + t2 + " type mismatch.")
             self.make_i = False
 
     def check_not_void(self, type):
         if type == 'void':
             self.semantic_errors += ['Illegal type of void']
+            self.print_error('Illegal type of void')
             self.make_i = False
 
     def check_continue_place(self):
         if self.number_of_while <= 0:
             self.semantic_errors += ['No ’while’ found for ’continue’.']
+            self.print_error('No ’while’ found for ’continue’.')
             self.make_i = False
 
     def check_break_place(self):
         if self.number_of_while <= 0 and self.number_of_switch <= 0:
             self.semantic_errors += ['No ’while’ or ’switch’ found for ’break’.']
+            self.print_error('No ’while’ or ’switch’ found for ’break’.')
             self.make_i = False
+
+    def check_main(self):
+        for func in self.functions:
+            if func == '[':
+                continue
+            if func[0] == 'main' and func[2] == 'void' and func[3] == []:
+                return
+        self.semantic_errors += ['main function not found!']
+        self.print_error('main function not found!')
+        self.make_i = False
+
+    def print_error(self, s):
+        f = open('all_errors.txt', 'a')
+        f.write(str(self.la.look_next()[2]) + "\t" + s + '\n')
+        f.close()
