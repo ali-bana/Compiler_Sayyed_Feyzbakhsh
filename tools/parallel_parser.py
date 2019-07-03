@@ -293,6 +293,7 @@ class Parser:
         f = open(self.errors_path, 'a')
         f.write(error + '\n')
         f.close()
+        self.print_error(error)
         pass
 
     def parse(self):
@@ -806,6 +807,7 @@ class Parser:
         return node
 
     def Sw_s(self):
+        aaa = self.la.look_next()
         node = ParseNode('Sw_s')
         self.pass_terminal_edge(node, 'switch')
         self.pass_terminal_edge(node, '(')
@@ -830,6 +832,7 @@ class Parser:
         return node
 
     def Ca_ss(self):
+        aaa = self.la.look_next()
         node = ParseNode('Ca_ss')
         if self.in_checker(self.la.look_next(), self.firsts['Ca_s']):
             self.pass_nonterminal_edge(node, 'Ca_s', self.Ca_s)
@@ -837,10 +840,17 @@ class Parser:
         return node
 
     def Ca_s(self):
+        aaa = self.la.look_next()
         node = ParseNode('Ca_s')
         self.pass_terminal_edge(node, 'case')
         ##########
         if self.make_i:
+            line = -1
+            is_not_second_case = self.pop()
+            if is_not_second_case != 'is_not_second_case':
+                self.push(is_not_second_case)
+            else:
+                line = int(self.pop())
             exp = self.pop()
             t = self.get_temp()
             number = self.la.look_next()[0]
@@ -849,6 +859,8 @@ class Parser:
             self.push(t)
             self.push(self.get_pbi())
             self.skip_command()
+            if line != -1:
+                self.put_command('JP', str(self.get_pbi()), '', '', str(line))
         ##########
         self.pass_terminal_edge(node, 'num')
         self.pass_terminal_edge(node, ':')
@@ -857,12 +869,23 @@ class Parser:
         if self.make_i:
             addr = self.pop()
             t = self.pop()
-            self.put_command('JPF', t, self.get_pbi(), '', addr)
+            self.put_command('JPF', t, self.get_pbi() + 1, '', addr)
+            self.push(self.get_pbi())
+            self.skip_command()
+            self.push('is_not_second_case')
         #########
         return node
 
     def De_s(self):
+        aaa = self.la.look_next()
         node = ParseNode('De_s')
+        if self.make_i:
+            temp = self.pop()
+            if temp == 'is_not_second_case':
+                x = self.pop()
+                self.put_command("JP", x + 1, '', '', x)
+            else:
+                self.push(temp)
         if self.terminal_checker(self.la.look_next(), 'default'):
             self.pass_terminal_edge(node, 'default')
             self.pass_terminal_edge(node, ':')

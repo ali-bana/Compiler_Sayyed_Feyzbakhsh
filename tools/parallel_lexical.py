@@ -30,6 +30,9 @@ class reader_writer:
 
     def add_error(self, error):
         self.errors.append(error)
+        f = open('all_errors.txt', 'a')
+        f.write(error + '\n')
+        f.close()
 
     def print_errors(self):
         f = open('lexical_errors.txt', 'a')

@@ -1,10 +1,32 @@
 
 void main(void)
 {
+    int get1(void){
+    return 1;
+    }
 	int t;
-	int y[5];
-	t = 2;
-	t = t == 2;
-	y = y + t;
-	output(t);
+	int o;
+	t = 1;
+	o = 0;
+	switch(t){
+        case 1:
+            o = o + 1;
+        case 2:
+            switch(o){
+                case 1:
+                    while (t < 4){
+                        o = o + 1;
+                        t = t + 1;
+                    }
+                    o = o + get1();
+
+                case 2:
+                    break;
+            }
+            break;
+        default:
+            o = o + 4;
+	}
+
+	output(o);
 }

@@ -1,2 +1,0 @@
-7	array, int type mismatch.
-8	504 is not defined.
